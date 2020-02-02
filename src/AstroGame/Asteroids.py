@@ -4,11 +4,11 @@ import numpy as np
 import pygame
 import pygame.gfxdraw
 
-from AstroGame.utils import TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE
+from AstroGame.utils import TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, RT_FPS
 
 SPIK_RAND_FACTOR = 5
 ASTERO_WIDTH = 3
-MIN_SIZE = 5
+MIN_ASTROID_SIZE = 5
 
 
 class Asteroid(pygame.sprite.Sprite):
@@ -24,11 +24,12 @@ class Asteroid(pygame.sprite.Sprite):
         # Setting speed and direction
         super().__init__(*groups)
         self.id = Asteroid.getID()
-        self.speed = 240 + np.random.randint(-3, 3)*10
+        self.speed = (1 + np.random.randint(-3, 3) * .2) * 100
         self.rot_angle = 0
-        self.rotation_speed = (2 * ((np.random.random() < .5) - .5)) * np.random.randint(30, 60) / TIME_DELTA
+        self.rotation_speed = (2 * ((np.random.random() < .5) - .5)) * np.random.randint(30, 60) / RT_FPS
         self.direction = np.radians(np.random.randint(0, 360))
         self.color = WHITE
+        self.size = size
 
         # Making the shape
         spikes_num = np.random.randint(5, 10)
@@ -56,6 +57,9 @@ class Asteroid(pygame.sprite.Sprite):
     def setPos(self, new_pos: np.ndarray) -> None:
         self.rect.center = new_pos
 
+    def getPos(self) -> np.ndarray:
+        return np.array(self.rect.center)
+
     def addShock(self, direction: float, speed: float):
         dirx = np.cos(direction) * speed + np.cos(self.direction) * self.speed
         diry = np.sin(direction) * speed + np.sin(self.direction) * self.speed
@@ -67,8 +71,8 @@ class Asteroid(pygame.sprite.Sprite):
         self.rot_angle += self.rotation_speed % 360
         self.rect = self.image.get_rect(center=center)
 
-        self.rect.x += np.cos(self.direction) * self.speed / TIME_DELTA
-        self.rect.y += np.sin(self.direction) * self.speed / TIME_DELTA
+        self.rect.x += np.cos(self.direction) * self.speed / RT_FPS
+        self.rect.y += np.sin(self.direction) * self.speed / RT_FPS
         cx, cy = self.rect.center
         if cx < 0:
             self.rect.x = SCREEN_WIDTH - self.rect.w / 2
@@ -78,6 +82,22 @@ class Asteroid(pygame.sprite.Sprite):
             self.rect.y = SCREEN_HEIGHT - self.rect.h / 2
         if cy > SCREEN_HEIGHT:
             self.rect.y = 0
+
+    def collide(self, o_obj) -> bool:
+        dist = (np.array(self.rect.center) - np.array(o_obj.rect.center)) ** 2
+        dist = np.sqrt(dist.sum())
+        return dist < (self.size + o_obj.size)
+
+    def gotShot(self, fire, game_engi):
+        if self.size > 2*MIN_ASTROID_SIZE:
+            a1 = Asteroid(self.size // 2)
+            a1.setPos(self.getPos()+3)
+            a2 = Asteroid(self.size // 2)
+            a2.setPos(self.getPos()-3)
+
+            game_engi.ast_group.add(a1)
+            game_engi.ast_group.add(a2)
+        self.kill()
 
 
 def create(n_asteroids: int) -> List[Asteroid]:

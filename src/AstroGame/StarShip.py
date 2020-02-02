@@ -1,11 +1,16 @@
+import time
+
 import numpy as np
 
 import pygame
 import pygame.gfxdraw
 
-from AstroGame.utils import SPACE_SHIP_GREEN, TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT
+from AstroGame.Asteroids import Asteroid
+from AstroGame.Fire import Fire
+from AstroGame.utils import SPACE_SHIP_GREEN, TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT, RT_FPS, rotateObject
 
 MAX_SPEED = 1000
+MIN_SHOOT_TIME = .5
 
 
 class StarShip(pygame.sprite.Sprite):
@@ -32,15 +37,11 @@ class StarShip(pygame.sprite.Sprite):
         self.rot_angle = 0
         self.speed = np.array([0, 0])
 
-    def rotateShip(self, angle: float):
-        center = self.rect.center
-        self.rot_angle = (self.rot_angle + angle) % 360
-        self.image = pygame.transform.rotate(self.image_org, self.rot_angle)
-        self.rect = self.image.get_rect(center=center)
+        self.last_shoot_ts = 0
 
     def move(self):
-        self.rect.x += self.speed[0] / TIME_DELTA
-        self.rect.y += self.speed[1] / TIME_DELTA
+        self.rect.x += self.speed[0] / RT_FPS
+        self.rect.y += self.speed[1] / RT_FPS
 
         cx, cy = self.rect.center
         if cx < 0:
@@ -52,15 +53,22 @@ class StarShip(pygame.sprite.Sprite):
         if cy > SCREEN_HEIGHT:
             self.rect.y = 0
 
-    def handle_keys(self):
+    def handle_keys(self, game_engi):
         """ Handles Keys """
         key = pygame.key.get_pressed()
         speed_inc = 10  # distance moved in 1 frame, try changing it to 5
         speec_dec = .9
         rot_ang = 5
         if key[pygame.K_SPACE]:  # Shoot
-            pass
-        elif key[pygame.K_DOWN]:  # Forward
+            if time.time() - self.last_shoot_ts >= MIN_SHOOT_TIME:
+                self.last_shoot_ts = time.time()
+                game_engi.fire_group.add(
+                    Fire(
+                        self.rect.center,
+                        self.rot_angle,
+                        self.speed
+                    ))
+        if key[pygame.K_DOWN]:  # Forward
             self.speed *= speec_dec
             mag = np.sqrt(np.power(self.speed, 2).sum())
             norm_speed = self.speed / (mag + np.finfo('float').eps)
@@ -75,6 +83,11 @@ class StarShip(pygame.sprite.Sprite):
             self.speed = norm_speed * mag
 
         if key[pygame.K_RIGHT]:  # Turn right
-            self.rotateShip(-rot_ang)
+            rotateObject(self, -rot_ang)
         elif key[pygame.K_LEFT]:  # Turn left
-            self.rotateShip(rot_ang)
+            rotateObject(self, rot_ang)
+
+    def collide(self, ast: Asteroid) -> bool:
+        dist = (np.array(self.rect.center) - np.array(ast.rect.center)) ** 2
+        dist = np.sqrt(dist.sum())
+        return dist < (self.rect.w + ast.size)
