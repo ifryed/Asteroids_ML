@@ -8,7 +8,7 @@ from AstroGame.utils import TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE
 
 SPIK_RAND_FACTOR = 5
 ASTERO_WIDTH = 3
-MIN_SIZE = 2
+MIN_SIZE = 5
 
 
 class Asteroid(pygame.sprite.Sprite):
@@ -20,7 +20,7 @@ class Asteroid(pygame.sprite.Sprite):
         Asteroid.id_counter += 1
         return Asteroid.id_counter
 
-    def __init__(self, size: int = 40, *groups) -> None:
+    def __init__(self, size: int = 20, *groups) -> None:
         # Setting speed and direction
         super().__init__(*groups)
         self.id = Asteroid.getID()
@@ -44,7 +44,6 @@ class Asteroid(pygame.sprite.Sprite):
         poly_width = self.polygon[:, 0].max() - self.polygon[:, 0].min()
         poly_height = self.polygon[:, 1].max() - self.polygon[:, 1].min()
 
-        rect_size = max(poly_height, poly_width)
         self.polygon += np.array([poly_height / 2, poly_width / 2])
 
         poly_img = pygame.Surface((poly_height, poly_width), pygame.SRCALPHA)

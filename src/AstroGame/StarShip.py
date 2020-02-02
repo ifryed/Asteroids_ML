@@ -1,8 +1,11 @@
 import numpy as np
 
 import pygame
+import pygame.gfxdraw
 
 from AstroGame.utils import SPACE_SHIP_GREEN, TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT
+
+MAX_SPEED = 1000
 
 
 class StarShip(pygame.sprite.Sprite):
@@ -53,23 +56,22 @@ class StarShip(pygame.sprite.Sprite):
         """ Handles Keys """
         key = pygame.key.get_pressed()
         speed_inc = 10  # distance moved in 1 frame, try changing it to 5
-        speec_dec = .005
+        speec_dec = .9
         rot_ang = 5
         if key[pygame.K_SPACE]:  # Shoot
             pass
         elif key[pygame.K_DOWN]:  # Forward
-            self.speed -= speec_dec
-            self.speed = np.max([
-                [0, 0],
-                [self.speed[0], self.speed[1]]
-            ], axis=0)
+            self.speed *= speec_dec
+            mag = np.sqrt(np.power(self.speed, 2).sum())
+            norm_speed = self.speed / (mag + np.finfo('float').eps)
+            self.speed = norm_speed * mag if mag > 1 else np.zeros_like(self.speed)
+
         elif key[pygame.K_UP]:  # Forward
             self.speed = self.speed + speed_inc * np.array([np.sin(np.radians(self.rot_angle)),
                                                             np.cos(np.radians(self.rot_angle))])
-            mag = np.linalg.norm(self.speed)
-            norm_speed = self.speed / mag
-            mag = np.min((1000.0, mag))
-            print(mag)
+            mag = np.sqrt(np.power(self.speed, 2).sum())
+            norm_speed = self.speed / (mag + np.finfo('float').eps)
+            mag = np.min((MAX_SPEED, mag))
             self.speed = norm_speed * mag
 
         if key[pygame.K_RIGHT]:  # Turn right

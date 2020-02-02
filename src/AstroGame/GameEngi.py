@@ -27,7 +27,7 @@ class GameEngi:
 
         self.bg_canvas = None
         # Create Astroid
-        self.asteroids_lst = Asteroids.create(1)
+        self.asteroids_lst = Asteroids.create(3)
         self.ast_group = pygame.sprite.Group()
         for ast in self.asteroids_lst:
             self.ast_group.add(ast)
