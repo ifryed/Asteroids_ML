@@ -87,7 +87,7 @@ class StarShip(pygame.sprite.Sprite):
             self.rotateLeft()
 
     def getMoves(self) -> list:
-        return [self.fire, self.brake, self.accelerate, self.rotateRight, self.rotateLeft]
+        return [self.fire, self.brake, self.accelerate, self.rotateRight, self.rotateLeft, lambda: ()]
 
     def collide(self, ast: Asteroid) -> bool:
         dist = (np.array(self.rect.center) - np.array(ast.rect.center)) ** 2

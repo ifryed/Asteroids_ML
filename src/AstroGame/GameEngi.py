@@ -26,19 +26,19 @@ class GameEngi:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.gameIsRunning = True
 
-        self.asteroids_lst = []
-        self.player = StarShip.StarShip()
-        self.player_group = pygame.sprite.Group()
-        self.player_group.add(self.player)
         pygame.init()
 
-        self.bg_canvas = None
         # Create Astroid
         self.asteroids_lst = Asteroids.create(3)
         self.fire_group = pygame.sprite.Group()
         self.ast_group = pygame.sprite.Group()
         for ast in Asteroids.create(3):
             self.ast_group.add(ast)
+
+        self.player_group = pygame.sprite.Group()
+        self.player = StarShip.StarShip()
+        self.player.rect.center = self.setPlayerPos()
+        self.player_group.add(self.player)
 
         self.driver = lambda: self.player.handle_keys(self)
         if self.mode == "auto":
@@ -48,7 +48,6 @@ class GameEngi:
         self.score = 0
 
     def paint(self):
-        self.bg_canvas = np.zeros((SCREEN_HEIGHT, SCREEN_WIDTH))
         self.ast_group.draw(self.screen)
         self.player_group.draw(self.screen)
         self.fire_group.draw(self.screen)
@@ -66,23 +65,28 @@ class GameEngi:
         self.checkCollision()
 
     def startGame(self):
+        start_time = time.time()
         t = time.time()
         while self.gameIsRunning:
             event = pygame.event.poll()
             if event.type == pygame.QUIT:
                 sys.exit()
 
-            threading.Thread(target=self.driver).start()
-
-            # self.driver()
+            # threading.Thread(target=self.driver).start()
+            self.driver()
 
             self.gameUpdate()
             self.paint()
 
             utils.RT_FPS = 1 / (time.time() - t)
-            print("\rFPS:{:.2f}\tScore:{}".format(utils.RT_FPS, self.score), end='')
+            print("\rFPS:{:.2f}\tScore:{}\t".format(utils.RT_FPS, self.score), end='')
             t = time.time()
             Clock().tick(TIME_DELTA)
+
+            if self.mode == 'auto' \
+                    and time.time() - start_time > 120:
+                break
+        self.endgame()
 
     def checkCollision(self):
         # Spaceship collision
@@ -114,9 +118,12 @@ class GameEngi:
                     handelCollision(ast, o_ast)
 
     def getSnapShot(self) -> np.ndarray:
-        return pygame.surfarray.array3d(self.screen)
+        small_img = pygame.surfarray.array3d(self.screen).copy()
+        small_img = np.resize(small_img, (SCREEN_HEIGHT // 2, SCREEN_WIDTH // 2, 3))
+        return small_img
 
     def endgame(self):
+        self.gameIsRunning = False
         if self.mode == 'auto':
             # Won game
             if len(self.ast_group) == 0:
@@ -125,7 +132,19 @@ class GameEngi:
             else:
                 self.score -= 1000
 
+            self.smart_player.smartMove(True)
+            self.smart_player.saveNet()
+            print("Rand_ratio:", PlayerML.AutoPlayer.rand_ratio)
             # RestartGame
             self.reset()
-        else:
-            self.gameIsRunning = False
+            self.startGame()
+
+    def setPlayerPos(self):
+        self.paint()
+        canvas = (pygame.surfarray.array3d(self.screen).max(2) == 0).astype(np.uint8)
+        canvas = np.swapaxes(canvas, 1, 0)
+        open_sky = cv2.erode(canvas, np.ones((100, 100)))
+        open_sky_xy = np.array(np.where(open_sky))
+        idx = np.random.randint(0, len(open_sky_xy[0]))
+
+        return tuple(open_sky_xy[:, idx])

@@ -6,7 +6,7 @@ import pygame.gfxdraw
 
 from AstroGame.utils import TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, RT_FPS
 
-SPIK_RAND_FACTOR = 5
+SPIK_RAND_FACTOR = .2
 ASTERO_WIDTH = 3
 MIN_ASTROID_SIZE = 5
 
@@ -24,7 +24,7 @@ class Asteroid(pygame.sprite.Sprite):
         # Setting speed and direction
         super().__init__(*groups)
         self.id = Asteroid.getID()
-        self.speed = (1 + np.random.randint(-3, 3) * .2) * 100
+        self.speed = (1 + np.random.randint(-3, 3) * .3) * 100
         self.rot_angle = 0
         self.rotation_speed = (2 * ((np.random.random() < .5) - .5)) * np.random.randint(30, 60) / RT_FPS
         self.direction = np.radians(np.random.randint(0, 360))
@@ -36,8 +36,8 @@ class Asteroid(pygame.sprite.Sprite):
         angle_step = np.radians(360 / spikes_num)
         polygon = []
         for s in range(spikes_num):
-            x = size * np.cos(s * angle_step) + (np.random.random() - .5) * SPIK_RAND_FACTOR
-            y = size * np.sin(s * angle_step) + (np.random.random() - .5) * SPIK_RAND_FACTOR
+            x = size * (np.cos(s * angle_step) + (np.random.random() - .5) * SPIK_RAND_FACTOR)
+            y = size * (np.sin(s * angle_step) + (np.random.random() - .5) * SPIK_RAND_FACTOR)
 
             polygon.append((x, y))
         self.polygon = np.array(polygon)
@@ -63,7 +63,7 @@ class Asteroid(pygame.sprite.Sprite):
     def addShock(self, direction: float, speed: float):
         dirx = np.cos(direction) * speed + np.cos(self.direction) * self.speed
         diry = np.sin(direction) * speed + np.sin(self.direction) * self.speed
-        self.direction = np.arctan2(diry, dirx)[0]
+        self.direction = np.arctan2(diry, dirx)
 
     def move(self) -> None:
         center = self.rect.center
@@ -89,11 +89,19 @@ class Asteroid(pygame.sprite.Sprite):
         return dist < (self.size + o_obj.size)
 
     def gotShot(self, fire, game_engi):
-        if self.size > 2*MIN_ASTROID_SIZE:
+        if self.size > 2 * MIN_ASTROID_SIZE:
+            hit_vec = np.array(self.rect.center) - np.array(fire.rect.center)
+            hit_ang = np.arctan2(hit_vec[1], hit_vec[0])
+            explod_vec_norm = np.array([np.cos(hit_ang + np.pi / 2), np.sin(hit_ang + np.pi / 2)])
+
+            tot_speed = self.speed + fire.speed
+            tot_speed = np.linalg.norm(tot_speed)
             a1 = Asteroid(self.size // 2)
-            a1.setPos(self.getPos()+3)
+            a1.setPos(self.getPos() + 10 * explod_vec_norm)
+            a1.speed = tot_speed * np.random.random()
             a2 = Asteroid(self.size // 2)
-            a2.setPos(self.getPos()-3)
+            a2.setPos(self.getPos() - 10 * explod_vec_norm)
+            a2.speed = tot_speed - a1.speed
 
             game_engi.ast_group.add(a1)
             game_engi.ast_group.add(a2)
@@ -117,6 +125,6 @@ def handelCollision(ast: Asteroid, o_ast: Asteroid) -> None:
     rect2 = o_ast.rect
 
     vec = np.array(rect1.center) - np.array(rect2.center)
-
-    ast.addShock(vec, o_ast.speed)
-    o_ast.addShock(-vec, ast.speed)
+    direction = np.arctan2(vec[1], vec[0])
+    ast.addShock(direction, o_ast.speed)
+    o_ast.addShock(-direction, ast.speed)
