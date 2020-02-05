@@ -11,11 +11,10 @@ LEARN = True
 
 
 class AutoPlayer:
-    rand_ratio = .5
+    rand_ratio = .3
 
-    def __init__(self, game_eng):
-        self.ge = game_eng
-        self.moves = game_eng.player.getMoves()
+    def __init__(self):
+        self.moves = []
         self.last_score = 0
 
         # Setting the NN
@@ -27,7 +26,7 @@ class AutoPlayer:
             self.model_player = RLNet.Player_net(len(self.moves)).to(self.device)
         self.model_player = self.model_player.float()
         self.criterion_player = nn.MSELoss()
-        learning_rate_player = 1e-10
+        learning_rate_player = 1e-8
         self.optimizer_player = torch.optim.Adam(self.model_player.parameters(), lr=learning_rate_player)
 
         self.model_state = RLNet.State_net(len(self.moves)).to(self.device)
@@ -37,21 +36,24 @@ class AutoPlayer:
         self.optimizer_state = torch.optim.Adam(self.model_state.parameters(), lr=learning_rate_state)
 
         self.loss_heap = []
-        self.old_snap_shot = self.ge.getSnapShot()
+        self.new_snap_shot = None
+        self.old_snap_shot = None
         self.toggle_learning = True
+
+    def setMoves(self, move_lst: list):
+        self.moves = move_lst
 
     def smartMove(self, end=False) -> None:
         self.toggle_learning = not self.toggle_learning
-        if end or self.toggle_learning:
+        if not end and self.toggle_learning:
             return
         # Get data
-        new_snap_shot = self.ge.getSnapShot()
-        h, w, z = new_snap_shot.shape
+        h, w, z = self.new_snap_shot.shape
 
         # Choose action
         input_data = np.zeros((1, 2, h, w, z))
         input_data[0, 0, :, :, :] = self.old_snap_shot
-        input_data[0, 1, :, :, :] = new_snap_shot
+        input_data[0, 1, :, :, :] = self.new_snap_shot
         tensor_img = torch.from_numpy(input_data).to(self.device)
 
         moves_pred_score = self.model_player(tensor_img.float())
@@ -88,7 +90,7 @@ class AutoPlayer:
             print("\nLoss: {:.2f}".format(loss_score / len(self.loss_heap)))
             self.loss_heap = []
 
-        self.old_snap_shot = new_snap_shot.copy()
+        self.old_snap_shot = self.new_snap_shot.copy()
 
         AutoPlayer.rand_ratio += 1e-5
 
