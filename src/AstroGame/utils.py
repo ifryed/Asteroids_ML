@@ -2,7 +2,7 @@ import pygame
 from pygame.sprite import Sprite
 
 TIME_DELTA = 30
-RT_FPS = 60
+RT_FPS = TIME_DELTA
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600

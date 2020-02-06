@@ -8,6 +8,7 @@ def main(sys_args):
     auto_player = PlayerML.AutoPlayer()
     game = GameEngi(sys_args.mode, auto_player)
     game.setSmartPlayer(auto_player)
+    auto_player.setupDNN()
     game_on = True
 
     while game_on:

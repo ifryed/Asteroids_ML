@@ -14,7 +14,7 @@ from AstroGame.Asteroids import handelCollision
 from AstroGame.utils import TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT
 
 BLACK_SCREEN = (0, 0, 0)
-MAX_GAME_TIME = 120
+MAX_GAME_TIME = 60 * 5
 
 
 class GameEngi:
@@ -23,19 +23,33 @@ class GameEngi:
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.mode = mode
+        # Init variables
         self.driver = lambda: self.player.handle_keys(self)
+        self.score = 0
+        self.smart_player = None
+        self.gameIsRunning = False
+        self.asteroids_lst = []
+        self.fire_group = None
+        self.ast_group = None
+        self.player_group = None
+        self.player = None
+
         self.setSmartPlayer(smrt_player)
         self.reset()
 
     def setSmartPlayer(self, smrt_player: PlayerML.AutoPlayer):
+        if smrt_player is None:
+            return
         self.smart_player = smrt_player
         smrt_player.ge = self
         self.driver = self.smart_player.smartMove
 
     def reset(self):
+        print("New Game")
+        print("=============================")
         self.gameIsRunning = True
 
-        # Create Astroid
+        # Create Asteroid
         self.asteroids_lst = Asteroids.create(np.random.randint(3, 5))
         self.fire_group = pygame.sprite.Group()
         self.ast_group = pygame.sprite.Group()
@@ -124,7 +138,8 @@ class GameEngi:
 
     def getSnapShot(self) -> np.ndarray:
         small_img = pygame.surfarray.array3d(self.screen).copy()
-        small_img = np.resize(small_img, (SCREEN_HEIGHT // 2, SCREEN_WIDTH // 2, 3))
+        small_img = cv2.resize(small_img, (0, 0), fx=.5, fy=.5)
+        small_img = np.swapaxes(small_img, 0, 1)
         return small_img
 
     def endgame(self):
@@ -137,7 +152,7 @@ class GameEngi:
                 self.score += 1000
                 print("VICTORY")
             elif len(self.player_group) == 0:
-                self.score -= 1000
+                self.score = -100
 
             self.smart_player.smartMove(True)
             self.smart_player.saveNet()

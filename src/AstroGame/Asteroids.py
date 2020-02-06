@@ -24,7 +24,7 @@ class Asteroid(pygame.sprite.Sprite):
         # Setting speed and direction
         super().__init__(*groups)
         self.id = Asteroid.getID()
-        self.speed = (1 + np.random.randint(-3, 3) * .3) * 100
+        self.speed = (1 + np.random.randint(-1, 1) * .3) * 200
         self.rot_angle = 0
         self.rotation_speed = (2 * ((np.random.random() < .5) - .5)) * np.random.randint(30, 60) / RT_FPS
         self.direction = np.radians(np.random.randint(0, 360))
@@ -98,7 +98,7 @@ class Asteroid(pygame.sprite.Sprite):
             tot_speed = np.linalg.norm(tot_speed)
             a1 = Asteroid(self.size // 2)
             a1.setPos(self.getPos() + 10 * explod_vec_norm)
-            a1.speed = tot_speed * np.random.random()
+            a1.speed = tot_speed * min(.8, max(.2, np.random.random()))
             a2 = Asteroid(self.size // 2)
             a2.setPos(self.getPos() - 10 * explod_vec_norm)
             a2.speed = tot_speed - a1.speed
@@ -126,5 +126,7 @@ def handelCollision(ast: Asteroid, o_ast: Asteroid) -> None:
 
     vec = np.array(rect1.center) - np.array(rect2.center)
     direction = np.arctan2(vec[1], vec[0])
-    ast.addShock(direction, o_ast.speed)
-    o_ast.addShock(-direction, ast.speed)
+    tot_speed = o_ast.speed + ast.speed
+    tot_size = ast.size + o_ast.size
+    ast.addShock(direction, tot_speed * ast.size / tot_size)
+    o_ast.addShock(-direction, tot_speed * o_ast.size / tot_size)
