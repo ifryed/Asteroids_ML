@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import PlayerML
 from AstroGame import Asteroids, StarShip, utils
 from AstroGame.Asteroids import handelCollision
-from AstroGame.utils import TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT
+from AstroGame.utils import TIME_DELTA, SCREEN_WIDTH, SCREEN_HEIGHT, Scores
 
 BLACK_SCREEN = (0, 0, 0)
 MAX_GAME_TIME = 60 * 5
@@ -20,6 +20,7 @@ MAX_GAME_TIME = 60 * 5
 class GameEngi:
 
     def __init__(self, mode='manual', smrt_player: PlayerML.AutoPlayer = None):
+        self.status = False
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.mode = mode
@@ -33,8 +34,11 @@ class GameEngi:
         self.ast_group = None
         self.player_group = None
         self.player = None
-
+        self.reward = 0
+        self.old_snap_shot = None
+        self.thread = None
         self.setSmartPlayer(smrt_player)
+
         self.reset()
 
     def setSmartPlayer(self, smrt_player: PlayerML.AutoPlayer):
@@ -45,8 +49,11 @@ class GameEngi:
         self.driver = self.smart_player.smartMove
 
     def reset(self):
-        print("New Game")
+        print("\nNew Game")
+        print("Rand_ratio:", PlayerML.AutoPlayer.rand_ratio)
         print("=============================")
+
+        self.thread = None
         self.gameIsRunning = True
 
         # Create Asteroid
@@ -64,6 +71,7 @@ class GameEngi:
             self.smart_player.setMoves(self.player.getMoves())
             self.smart_player.old_snap_shot = self.getSnapShot()
         self.score = 0
+        self.reward = 0
 
     def paint(self):
         self.ast_group.draw(self.screen)
@@ -85,6 +93,8 @@ class GameEngi:
     def startGame(self):
         start_time = time.time()
         t = time.time()
+        self.old_snap_shot = self.getSnapShot()
+        self.thread = threading.Thread()
         while self.gameIsRunning:
             event = pygame.event.poll()
             if event.type == pygame.QUIT:
@@ -92,10 +102,19 @@ class GameEngi:
 
             # threading.Thread(target=self.driver).start()
             if self.mode == 'auto':
-                self.smart_player.new_snap_shot = self.getSnapShot()
-                self.smart_player.current_score = self.score
-            self.driver()
-
+                new_snap_shot = self.getSnapShot()
+                if not self.thread.is_alive():
+                    move_fun = lambda: self.smart_player.smartMove(
+                        np.array([[self.old_snap_shot,
+                                   new_snap_shot]]),
+                        self.reward,
+                        not self.gameIsRunning)
+                    self.thread = threading.Thread(
+                        target=move_fun)
+                    self.thread.start()
+                    self.old_snap_shot = new_snap_shot[:]
+            else:
+                self.driver()
             self.gameUpdate()
             self.paint()
 
@@ -114,19 +133,20 @@ class GameEngi:
             if self.player.collide(ast):
                 self.player.kill()
                 print("BOOM")
-                self.endgame()
+                self.endgame(victory=False)
 
         # Fire collision
         for fire in self.fire_group:
             for ast in self.ast_group:
                 if fire.collide(ast):
                     Asteroids.gotShot(ast, fire, self)
-                    self.score += 1e4 * 1 / np.sqrt(ast.size)
+                    self.reward += Scores.AST_HIT_SCORE
+                    self.score += 1e4 * 1 / ast.size
                     fire.kill()
                     break
 
         if len(self.ast_group) < 1:
-            self.endgame()
+            self.endgame(victory=True)
         # Astroids collision
         handled_ast = []
         for ast in self.ast_group:
@@ -143,22 +163,27 @@ class GameEngi:
         small_img = np.swapaxes(small_img, 0, 1)
         return small_img
 
-    def endgame(self):
+    def endgame(self, victory=True):
+        self.status = victory
         self.gameIsRunning = False
 
     def gameClouser(self) -> bool:
         if self.mode == 'auto':
             # Won game
-            if len(self.ast_group) == 0:
-                self.score += 1000
+            if self.status:
+                self.reward += Scores.GAME_WON
                 print("VICTORY")
             elif len(self.player_group) == 0:
-                self.score = -100
+                self.reward += Scores.GAME_LOST
 
-            self.smart_player.smartMove(True)
+            new_snap_shot = self.getSnapShot()
+            self.smart_player.smartMove(
+                np.array([[self.old_snap_shot,
+                           new_snap_shot]]),
+                self.reward,
+                not self.gameIsRunning)
+
             self.smart_player.saveNet()
-            print("Rand_ratio:", PlayerML.AutoPlayer.rand_ratio)
-
             return True
 
     def setPlayerPos(self):
