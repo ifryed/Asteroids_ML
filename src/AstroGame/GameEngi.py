@@ -93,6 +93,7 @@ class GameEngi:
             # threading.Thread(target=self.driver).start()
             if self.mode == 'auto':
                 self.smart_player.new_snap_shot = self.getSnapShot()
+                self.smart_player.current_score = self.score
             self.driver()
 
             self.gameUpdate()
@@ -119,8 +120,8 @@ class GameEngi:
         for fire in self.fire_group:
             for ast in self.ast_group:
                 if fire.collide(ast):
-                    ast.gotShot(fire, self)
-                    self.score += 100 * 1 / np.sqrt(ast.size)
+                    Asteroids.gotShot(ast, fire, self)
+                    self.score += 1e4 * 1 / np.sqrt(ast.size)
                     fire.kill()
                     break
 

@@ -1,4 +1,5 @@
 import os
+from typing import Callable
 
 import numpy as np
 import torch
@@ -6,7 +7,7 @@ from torch import nn
 
 import RLNet
 
-LEARNING_PATH_LEN = 30
+LEARNING_PATH_LEN = 2
 LEARN = True
 
 
@@ -21,6 +22,7 @@ class AutoPlayer:
         self.new_snap_shot = None
         self.old_snap_shot = None
         self.toggle_learning = True
+        self.current_score = 0
 
     def setMoves(self, move_lst: list):
         self.moves = move_lst
@@ -57,8 +59,8 @@ class AutoPlayer:
                 or end \
                 and LEARN:
             # Update results
-            score_diff = self.last_score - self.ge.score
-            self.last_score = self.ge.score
+            score_diff = self.last_score - self.current_score
+            self.last_score = self.current_score
             loss_score = 0
 
             for idx, t_pred in enumerate(self.pred_heap):

@@ -88,24 +88,25 @@ class Asteroid(pygame.sprite.Sprite):
         dist = np.sqrt(dist.sum())
         return dist < (self.size + o_obj.size)
 
-    def gotShot(self, fire, game_engi):
-        if self.size > 2 * MIN_ASTROID_SIZE:
-            hit_vec = np.array(self.rect.center) - np.array(fire.rect.center)
-            hit_ang = np.arctan2(hit_vec[1], hit_vec[0])
-            explod_vec_norm = np.array([np.cos(hit_ang + np.pi / 2), np.sin(hit_ang + np.pi / 2)])
 
-            tot_speed = self.speed + fire.speed
-            tot_speed = np.linalg.norm(tot_speed)
-            a1 = Asteroid(self.size // 2)
-            a1.setPos(self.getPos() + 10 * explod_vec_norm)
-            a1.speed = tot_speed * min(.8, max(.2, np.random.random()))
-            a2 = Asteroid(self.size // 2)
-            a2.setPos(self.getPos() - 10 * explod_vec_norm)
-            a2.speed = tot_speed - a1.speed
+def gotShot(ast: Asteroid, fire, game_engi):
+    if ast.size > 2 * MIN_ASTROID_SIZE:
+        hit_vec = np.array(ast.rect.center) - np.array(fire.rect.center)
+        hit_ang = np.arctan2(hit_vec[1], hit_vec[0])
+        explod_vec_norm = np.array([np.cos(hit_ang + np.pi / 2), np.sin(hit_ang + np.pi / 2)])
 
-            game_engi.ast_group.add(a1)
-            game_engi.ast_group.add(a2)
-        self.kill()
+        tot_speed = ast.speed + fire.speed
+        tot_speed = np.linalg.norm(tot_speed)
+        a1 = Asteroid(ast.size // 2)
+        a1.setPos(ast.getPos() + 10 * explod_vec_norm)
+        a1.speed = tot_speed * min(.8, max(.2, np.random.random()))
+        a2 = Asteroid(ast.size // 2)
+        a2.setPos(ast.getPos() - 10 * explod_vec_norm)
+        a2.speed = tot_speed - a1.speed
+
+        game_engi.ast_group.add(a1)
+        game_engi.ast_group.add(a2)
+    ast.kill()
 
 
 def create(n_asteroids: int) -> List[Asteroid]:
