@@ -5,16 +5,17 @@ from AstroGame.GameEngi import GameEngi
 
 
 def main(sys_args):
-    auto_player = PlayerML.AutoPlayer()
+    auto_player = PlayerML.AutoPlayer() if sys_args.mode == 'auto' else None
     game = GameEngi(sys_args.mode, auto_player)
-    game.setSmartPlayer(auto_player)
-    auto_player.setupDNN()
+    if sys_args.mode == 'auto':
+        game.setSmartPlayer(auto_player)
+        auto_player.setupDNN()
     game_on = True
 
     while game_on:
+        game.reset()
         game.startGame()
         game_on = game.gameClouser()
-        game.reset()
 
 
 if __name__ == '__main__':

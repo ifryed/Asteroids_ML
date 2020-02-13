@@ -49,9 +49,10 @@ class GameEngi:
         self.driver = self.smart_player.smartMove
 
     def reset(self):
+        print("=============================")
         print("\nNew Game")
         print("Rand_ratio:", PlayerML.AutoPlayer.rand_ratio)
-        print("=============================")
+        print("-----------------------------")
 
         self.thread = None
         self.gameIsRunning = True
@@ -190,7 +191,7 @@ class GameEngi:
         self.paint()
         canvas = (pygame.surfarray.array3d(self.screen).max(2) == 0).astype(np.uint8)
         canvas = np.swapaxes(canvas, 1, 0)
-        open_sky = cv2.erode(canvas, np.ones((100, 100)))
+        open_sky = cv2.erode(canvas, np.ones((200, 200)))
         open_sky_xy = np.array(np.where(open_sky))
         idx = np.random.randint(0, len(open_sky_xy[0]))
 

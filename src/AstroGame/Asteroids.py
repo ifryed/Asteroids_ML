@@ -97,11 +97,13 @@ def gotShot(ast: Asteroid, fire, game_engi):
 
         tot_speed = ast.speed + fire.speed
         tot_speed = np.linalg.norm(tot_speed)
-        a1 = Asteroid(ast.size // 2)
-        a1.setPos(ast.getPos() + 10 * explod_vec_norm)
+        half_size = ast.size // 2
+        quart_size = ast.size // 4
+        a1 = Asteroid(half_size)
+        a1.setPos(ast.getPos() + quart_size * explod_vec_norm)
         a1.speed = tot_speed * min(.8, max(.2, np.random.random()))
-        a2 = Asteroid(ast.size // 2)
-        a2.setPos(ast.getPos() - 10 * explod_vec_norm)
+        a2 = Asteroid(half_size)
+        a2.setPos(ast.getPos() - quart_size * explod_vec_norm)
         a2.speed = tot_speed - a1.speed
 
         game_engi.ast_group.add(a1)

@@ -15,7 +15,6 @@ class AutoPlayer:
 
     def __init__(self):
         self.moves = []
-        self.last_score = 0
 
         self.pred_heap = []
         self.current_score = 0
@@ -35,11 +34,11 @@ class AutoPlayer:
         # Execute action
         if move_idx == 0:
             self.moves[move_idx](self.ge)
+            reward -= .1
         else:
             self.moves[move_idx]()
 
         # Update results
-        self.last_score = self.current_score
         score_loss = score_pred.clone()
         score_loss[0, move_idx] = reward
         loss = self.criterion_player(score_pred, score_loss)
@@ -52,7 +51,7 @@ class AutoPlayer:
         print("\tLoss: {:.2f}".format(loss_flt), end='')
         self.pred_heap = []
 
-        AutoPlayer.rand_ratio = min(AutoPlayer.rand_ratio + 1e-5, 0.8)
+        AutoPlayer.rand_ratio = min(AutoPlayer.rand_ratio + 5e-6, 0.8)
 
     def saveNet(self):
         if LEARN:
@@ -71,8 +70,8 @@ class AutoPlayer:
         learning_rate_player = 1e-5
         self.optimizer_player = torch.optim.Adam(self.model_player.parameters(), lr=learning_rate_player)
 
-        # self.model_state = RLNet.State_net(len(self.moves)).to(self.device)
-        # self.model_state = self.model_state.float()
-        # self.criterion_state = nn.MSELoss()
-        # learning_rate_state = 0.01
-        # self.optimizer_state = torch.optim.Adam(self.model_state.parameters(), lr=learning_rate_state)
+        self.model_state = RLNet.State_net(len(self.moves)).to(self.device)
+        self.model_state = self.model_state.float()
+        self.criterion_state = nn.MSELoss()
+        learning_rate_state = 0.01
+        self.optimizer_state = torch.optim.Adam(self.model_state.parameters(), lr=learning_rate_state)
