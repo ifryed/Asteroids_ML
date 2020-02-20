@@ -32,7 +32,7 @@ class Fire(pygame.sprite.Sprite):
                                FIRE_SPEED * np.cos(np.radians(self.rot_angle))]) + speed
         self.dist_traveled = 0
 
-    def move(self):
+    def fireStep(self):
         self.rect.x += self.speed[0] / RT_FPS
         self.rect.y += self.speed[1] / RT_FPS
 

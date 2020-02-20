@@ -65,7 +65,7 @@ class Asteroid(pygame.sprite.Sprite):
         diry = np.sin(direction) * speed + np.sin(self.direction) * self.speed
         self.direction = np.arctan2(diry, dirx)
 
-    def move(self) -> None:
+    def asteroidStep(self) -> None:
         center = self.rect.center
         self.image = pygame.transform.rotate(self.image_org, self.rot_angle)
         self.rot_angle += self.rotation_speed % 360
@@ -74,13 +74,13 @@ class Asteroid(pygame.sprite.Sprite):
         self.rect.x += np.cos(self.direction) * self.speed / RT_FPS
         self.rect.y += np.sin(self.direction) * self.speed / RT_FPS
         cx, cy = self.rect.center
-        if cx < 0:
+        if cx <= 0:
             self.rect.x = SCREEN_WIDTH - self.rect.w / 2
-        if cx > SCREEN_WIDTH:
+        if cx >= SCREEN_WIDTH:
             self.rect.x = 0
-        if cy < 0:
+        if cy <= 0:
             self.rect.y = SCREEN_HEIGHT - self.rect.h / 2
-        if cy > SCREEN_HEIGHT:
+        if cy >= SCREEN_HEIGHT:
             self.rect.y = 0
 
     def collide(self, o_obj) -> bool:

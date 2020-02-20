@@ -14,12 +14,16 @@ WHITE = (255, 255, 255)
 SPACE_SHIP_GREEN = (0, 255, 130)
 FIRE_RED = (255, 255, 130)
 
+# Models path
+PLAYER_NET_PATH = '../player.mdl'
+STATE_NET_PATH = '../state.mdl'
+
 
 @dataclass
 class Scores:
-    AST_HIT_SCORE = 1
-    GAME_WON = 1
-    GAME_LOST = -1
+    AST_HIT_SCORE = 100
+    GAME_WON = 100
+    GAME_LOST = -100
 
 
 def rotateObject(obj: Sprite, angle):
